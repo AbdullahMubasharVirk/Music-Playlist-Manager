@@ -6,6 +6,7 @@ All data, including users, playlists, songs, and session information, is stored 
 
 Features:
 
+
 User Features:
 
 1.Register and log in with personal accounts.
@@ -15,6 +16,7 @@ User Features:
 3.Add or remove songs from playlists.
 
 4.Control playlist privacy (public/private).
+
 
 
 Admin Features:
@@ -32,6 +34,7 @@ Admin Features:
 6.Change the privacy status of playlists.
 
 
+
 Technologies Used:
 
 HTML + Css + JavaScript
@@ -39,6 +42,7 @@ HTML + Css + JavaScript
 Browser Local Storage – to store user data, playlists, songs, and session information.
 
 Visual Studio Code – used as the development environment.
+
 
 
 Setup & Usage
@@ -50,6 +54,7 @@ Open the folder in a web browser.
 Users can register and log in to access standard features.
 
 Admin users can log in with admin credentials and access the Admin Panel with an additional password.
+
 
 
 Contribution:
