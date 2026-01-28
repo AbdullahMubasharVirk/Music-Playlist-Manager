@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Music Playlist Manager · Dashboard</title>
+
+<style>
+
+  
+:root{
+  --bg:#0b0b0b;
+  --panel:#121212;
+  --panel-2:#0f0f0f;
+  --primary:#d4af37;
+  --text:#e5e5e5;
+  --muted:#9a9a9a;
+  --border:#2a2a2a;
+}
+
+
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+  min-height:100vh;
+}
+
+
+.sidebar{
+  width:240px;
+  background:var(--panel);
+  border-right:1px solid var(--border);
+  padding:20px;
+}
+.brand{font-weight:700;margin-bottom:30px}
+.menu h4{
+  font-size:12px;
+  color:var(--muted);
+  margin:20px 0 8px;
+  text-transform:uppercase;
+}
+
+.menu-item{
+  padding:10px;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:14px;
+}
+
+
+.menu-item:hover,.menu-item.active{
+  background:var(--panel-2);
+  color:var(--primary);
+}
+
+.main{flex:1;padding:24px}
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:24px;
+}
+
+.card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:20px;
+  margin-bottom:20px;
+}
+
+
+
+input{
+  width:100%;
+  padding:12px;
+  margin:6px 0 12px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:#0a0a0a;
+  color:var(--text);
+}
+
+button{
+  padding:8px 14px;
+  border:none;
+  border-radius:8px;
+  background:var(--primary);
+  color:#000;
+  font-weight:600;
+  cursor:pointer;
+  margin-left:4px;
+}
+
+
+.playlist{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px;
+  background:var(--panel-2);
+  border-radius:10px;
+  margin-bottom:8px;
+}
+.actions button{
+  background:none;
+  color:var(--primary);
+  font-size:16px;
+}
+
+.small{color:var(--muted);font-size:12px}
+.privacy{
+  display:flex;
+  gap:16px;
+  margin-bottom:12px;
+  font-size:14px;
+}
+.privacy label{
+  cursor:pointer;
+
+
+}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+  <div class="brand">🎵 Playlist Manager</div>
+  <div class="menu">
+    <h4>📚 Library</h4>
+    <div class="menu-item active" data-view="all">🎶 All Playlists</div>
+    <div class="menu-item" data-view="favorites">⭐ Favorite Playlists</div>
+    <div class="menu-item" data-view="likedPlaylists">💛 Liked Playlists</div>
+    <div class="menu-item" data-view="likedSongs">❤️ Liked Songs</div>
+    <div class="menu-item" onclick="openPublic()">🌍 Public Playlists</div>
+    <h4>⚙️ Setting</h4>
+    <div class="menu-item" onclick="changeAccount()">🔧 Change Account Info</div>
+    <h4>👤 Account</h4>
+    <div class="menu-item" onclick="openAdmin()">👑 Admin Panel</div>
+    <div class="menu-item" onclick="logout()">🚪 Logout</div>
+  </div>
+</div>
+
+<div class="main">
+
+<div class="header">
+  <h2 id="headerTitle">Your Dashboard</h2>
+  <span id="userName"></span>
+</div>
+
+<div class="card" id="createCard">
+  <h3>Create Playlist</h3>
+
+  <input id="playlistName" placeholder="Playlist name">
+
+
+  <div class="privacy">
+    <label>
+      <input type="radio" name="privacy" value="public" checked>
+      🌍 Public
+    </label>
+    <label>
+      <input type="radio" name="privacy" value="private">
+      🔒 Private
+    </label>
+  </div>
+
+  <button onclick="createPlaylist()">Create</button>
+</div>
+
+<div class="card">
+  <h3 id="sectionTitle">All Playlists</h3>
+  <div id="playlistList"></div>
+</div>
+
+</div>
+
+<script>
+const DB_KEY='MPM_DB_V5';
+const ADMIN_PASSWORD='admin123';
+
+const db=JSON.parse(localStorage.getItem(DB_KEY))||{
+  playlists:[],
+  songs:[],
+  users:[],
+  warnings:[]
+};
+
+const currentUser=JSON.parse(localStorage.getItem('MPM_currentUser'));
+if(!currentUser) location.href='index.html';
+userName.textContent=currentUser.username;
+
+let isAdmin=false;
+let currentView='all';
+
+function saveDB(){localStorage.setItem(DB_KEY,JSON.stringify(db))}
+
+
+
+function createPlaylist(){
+  if(!playlistName.value.trim()) return;
+
+  const privacy =
+    document.querySelector('input[name="privacy"]:checked').value === 'public';
+
+  db.playlists.push({
+    id:Date.now(),
+    owner:currentUser.username,
+    name:playlistName.value,
+    isFavorite:false,
+    isLiked:false,
+    isPublic:privacy
+  });
+
+  playlistName.value='';
+  saveDB();
+  render(currentView);
+}
+
+
+
+function openAdmin(){
+  if(currentUser.username.toLowerCase() !== 'admin'){
+    return alert("You are not allowed to access Admin Panel!");
+  }
+
+  const pass = prompt('Enter admin password');
+  if(pass !== 'Admin123') return alert('Wrong password');
+
+  
+  window.location.href = 'admin.html';
+}
+if(currentUser.username.toLowerCase() !== 'admin'){
+  document.querySelector('.menu-item[onclick="openAdmin()"]').style.display = 'none';
+}
+function exitAdmin(){
+  isAdmin=false;
+  headerTitle.textContent='Your Dashboard';
+  createCard.style.display='block';
+  render('all');
+}
+
+
+function render(view){
+  playlistList.innerHTML='';
+  currentView=view;
+
+  if(view==='admin'){
+    sectionTitle.textContent='All Playlists (Admin)';
+    db.playlists.forEach(p=>{
+      const div=document.createElement('div');
+      div.className='playlist';
+      div.innerHTML=`
+        <span>
+          ${p.isPublic?'🌍':'🔒'} ${p.name}
+          <div class="small">Owner: ${p.owner}</div>
+        </span>
+        <div class="actions">
+          <button onclick="togglePublic(${p.id})">${p.isPublic?'🔒':'🌍'}</button>
+          <button onclick="deletePlaylist(${p.id})">🗑️</button>
+        </div>`;
+      playlistList.appendChild(div);
+    });
+    playlistList.innerHTML+=`<button onclick="exitAdmin()">⬅ Back</button>`;
+    return;
+  }
+
+
+  sectionTitle.textContent={
+    all:'All Playlists',
+    favorites:'Favorite Playlists',
+    likedPlaylists:'Liked Playlists',
+    likedSongs:'Liked Songs'
+  }[view];
+
+
+let playlists = db.playlists.filter(p => p.owner === currentUser.username);
+
+
+
+if(view === 'favorites') playlists = playlists.filter(p => p.isFavorite);
+if(view === 'likedPlaylists') playlists = playlists.filter(p => p.isLiked);
+
+if(view === 'likedSongs') {
+  sectionTitle.textContent = 'Liked Songs';
+  const likedSongs = db.songs.filter(s => s.isLiked && s.owner === currentUser.username);
+
+  likedSongs.forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'playlist'; 
+    div.innerHTML = `
+      <span>${s.title} ${s.artist ? '- ' + s.artist : ''}</span>
+      <div class="actions">
+        <button onclick="toggleLikeSong(${s.id})">${s.isLiked ? '❤️' : '🤍'}</button>
+        <button onclick="openSong('${s.link}')">▶</button>
+      </div>`;
+    playlistList.appendChild(div);
+  });
+
+  if(!likedSongs.length)
+    playlistList.innerHTML = '<p class="small">No liked songs yet</p>';
+
+  return; 
+}
+
+
+if(view === 'likedSongs'){
+    playlistList.innerHTML = '';
+    const likedSongs = db.songs.filter(s => s.isLiked);
+    if(likedSongs.length === 0){
+        playlistList.innerHTML = '<p class="small">No liked songs yet</p>';
+        return;
+    }
+    likedSongs.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'playlist';
+        div.innerHTML = `
+          <span>${s.title} ${s.artist ? '- ' + s.artist : ''}</span>
+          <div class="actions">
+            <button onclick="openPlaylist(${s.playlistId})">🎵 Open Playlist</button>
+            <button onclick="toggleLike(${s.id})">${s.isLiked?'❤️':'🤍'}</button>
+          </div>
+        `;
+        playlistList.appendChild(div);
+    });
+    return; 
+}
+
+
+playlists.forEach(p=>{
+  const div=document.createElement('div');
+  div.className='playlist';
+  div.innerHTML=`
+    <span>${p.isPublic?'🌍':'🔒'} ${p.name}</span>
+    <div class="actions">
+      <button onclick="openPlaylist(${p.id})">▶</button>
+      <button onclick="togglePublic(${p.id})">${p.isPublic?'🔒':'🌍'}</button>
+      <button onclick="toggleFav(${p.id})">${p.isFavorite?'⭐':'☆'}</button>
+      <button onclick="toggleLike(${p.id})">${p.isLiked?'💛':'🤍'}</button>
+      <button onclick="deletePlaylist(${p.id})">🗑️</button>
+    </div>`;
+  playlistList.appendChild(div);
+});
+
+  if(!playlists.length)
+    playlistList.innerHTML='<p class="small">No playlists here</p>';
+}
+
+
+function togglePublic(id){
+  const p=db.playlists.find(p=>p.id===id);
+  if(!isAdmin && p.owner!==currentUser.username) return;
+  p.isPublic=!p.isPublic;
+  saveDB();render(currentView);
+}
+function toggleFav(id){const p=db.playlists.find(p=>p.id===id);p.isFavorite=!p.isFavorite;saveDB();render(currentView)}
+function toggleLike(id){const p=db.playlists.find(p=>p.id===id);p.isLiked=!p.isLiked;saveDB();render(currentView)}
+function deletePlaylist(id){
+  if(!confirm('Delete playlist?'))return;
+  db.playlists=db.playlists.filter(p=>p.id!==id);
+  db.songs=db.songs.filter(s=>s.playlistId!==id);
+  saveDB();render(currentView);
+}
+function openPlaylist(id){location.href=`playlist.html?id=${id}`}
+function logout(){localStorage.removeItem('MPM_currentUser');location.href='index.html'}
+
+function toggleLikeSong(id){
+  const s = db.songs.find(x => x.id === id);
+  if(!s) return;
+  s.isLiked = !s.isLiked;
+  saveDB();
+  render('likedSongs');
+}
+
+function openSong(link){
+  if (!/^https?:\/\//i.test(link)) {
+    link = 'https://' + link;
+  }
+  window.open(link, '_blank');
+}
+
+function openPublic(){
+  location.href = 'public.html';
+}
+
+function changeAccount(){
+  const currentPass = prompt("Enter your current password to continue:");
+
+  if(currentPass !== currentUser.password){
+    return alert("Incorrect password!");
+  }
+
+  
+  const newUsername = prompt("Enter new username (leave blank to keep current):", currentUser.username);
+  const newPassword = prompt("Enter new password (leave blank to keep current):");
+
+  if(!newUsername && !newPassword){
+    return alert("Nothing changed.");
+  }
+
+  
+  if(newUsername){
+    
+    const exists = db.users.some(u => u.username === newUsername);
+    if(exists && newUsername !== currentUser.username){
+      return alert("Username already taken!");
+    }
+    currentUser.username = newUsername;
+  }
+
+  
+  if(newPassword){
+    currentUser.password = newPassword;
+  }
+
+ 
+  const userIndex = db.users.findIndex(u => u.username === currentUser.username);
+  if(userIndex !== -1){
+    db.users[userIndex] = currentUser;
+  } else {
+    db.users.push(currentUser);
+  }
+
+
+  localStorage.setItem('MPM_currentUser', JSON.stringify(currentUser));
+  saveDB();
+
+  
+  userName.textContent = currentUser.username;
+
+  alert("Account updated successfully!");
+}
+
+
+document.querySelectorAll('.menu-item[data-view]').forEach(i=>{
+  i.onclick=()=>{
+    document.querySelectorAll('.menu-item').forEach(x=>x.classList.remove('active'));
+    i.classList.add('active');
+    render(i.dataset.view);
+  };
+});
+
+render('all');
+</script>
+
+</body>
+</html>
+
+
+
+
+
+

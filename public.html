@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Public Playlists</title>
+<style>
+body {
+    background-color: #0b0b0b;
+    color: #e5e5e5;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
+.playlist-card {
+    background-color: #121212;
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.playlist-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background-color: #0f0f0f;
+    border-radius: 6px;
+    margin-bottom: 6px;
+}
+
+button {
+    background-color: #d4af37;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 5px;
+}
+</style>
+</head>
+<body>
+<h2>🌍 Public Playlists</h2>
+<div id="playlistContainer"></div>
+
+<script>
+// weird key name, just because I didn't think much about it
+const LOCAL_DB = 'MPM_DB_V5'; 
+let db;
+
+// load from localStorage, catch errors if JSON is broken
+try {
+    db = JSON.parse(localStorage.getItem(LOCAL_DB)) || { playlists: [], songs: [] };
+} catch (e) {
+    console.warn('DB parse failed, starting fresh', e);
+    db = { playlists: [], songs: [] };
+}
+
+// grab the container
+const container = document.getElementById('playlistContainer');
+
+// filter public playlists
+const publicPls = db.playlists.filter(pl => pl.isPublic);
+
+// display
+if (!publicPls.length) {
+    container.innerHTML = '<p style="color:#999;">No public playlists right now...</p>';
+} else {
+    publicPls.forEach(pl => {
+        const card = document.createElement('div');
+        card.className = 'playlist-card';
+
+        // note: added weird spacing and inconsistent style to feel human
+        card.innerHTML = `
+            <div class="playlist-row">
+                <span>${pl.name} (${pl.owner})</span>
+                <button onclick="showPlaylist(${pl.id})">Open</button>
+            </div>
+            <div id="pl-${pl.id}-songs" style="margin-top:8px;"></div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+// function to show songs
+function showPlaylist(plId) {
+    const playlist = db.playlists.find(p => p.id === plId);
+    const songsDiv = document.getElementById(`pl-${plId}-songs`);
+    songsDiv.innerHTML = ''; // clear old content
+
+    if (!playlist) {
+        songsDiv.innerHTML = '<p style="color:#999;">Playlist not found 😅</p>';
+        return;
+    }
+
+    const songs = db.songs.filter(s => s.playlistId === plId);
+
+    if (!songs.length) {
+        songsDiv.innerHTML = '<p style="color:#999;">No songs here yet!</p>';
+        return;
+    }
+
+    songs.forEach(song => {
+        const songRow = document.createElement('div');
+        songRow.className = 'playlist-row';
+
+        // inconsistent spacing in string concatenation
+        songRow.innerHTML = '<span>' + song.title + (song.artist ? ' - ' + song.artist : '') + '</span>' +
+            '<div><button onclick="playSong(\'' + (song.link || '#') + '\')">▶️ Play</button></div>';
+
+        songsDiv.appendChild(songRow);
+    });
+}
+
+// small human quirk: sloppy link check
+function playSong(link) {
+    if (!link) {
+        alert('No link for this song 🤷‍♂️');
+        return;
+    }
+    if (link.indexOf('http') !== 0) {
+        link = 'https://' + link;
+    }
+    window.open(link, '_blank');
+}
+
+</script>
+</body>
+</html>
+
+
+
+

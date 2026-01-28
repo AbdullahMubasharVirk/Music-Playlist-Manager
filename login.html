@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Music Playlist Manager · Login</title>
+<style>
+:root {
+  --bg: #0b0b0b;
+  --panel: #121212;
+  --primary: #d4af37;
+  --secondary: #9a9a9a;
+  --text: #e5e5e5;
+  --border: #2a2a2a;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: radial-gradient(circle at top, #1a1a1a, #000);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 420px;
+  padding: 20px;
+}
+
+.auth-card {
+  background: var(--panel);
+  border-radius: 14px;
+  padding: 28px;
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.auth-header h1 {
+  margin: 0;
+  font-size: 22px;
+  color: var(--text);
+}
+
+.auth-header p {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--secondary);
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--secondary);
+}
+
+.tab.active {
+  color: var(--primary);
+  border-bottom: 2px solid var(--primary);
+}
+
+.form {
+  display: none;
+}
+
+.form.active {
+  display: block;
+}
+
+label {
+  font-size: 13px;
+  color: var(--secondary);
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  margin: 6px 0 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #0a0a0a;
+  color: var(--text);
+  font-size: 14px;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  background: var(--primary);
+  color: #000;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--secondary);
+}
+</style>
+</head>
+
+<body>
+
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h1>Music Playlist Manager</h1>
+      <p>Sign in to manage your music</p>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" id="loginTab">Login</div>
+      <div class="tab" id="registerTab">Register</div>
+    </div>
+
+    <div class="form active" id="loginForm">
+      <label>Username</label>
+      <input id="login-username" placeholder="Enter your username">
+      <label>Password</label>
+      <input id="login-password" type="password" placeholder="Enter your password">
+      <button id="loginSubmit">Login</button>
+    </div>
+
+    <div class="form" id="registerForm">
+      <label>Username</label>
+      <input id="reg-username" placeholder="Choose a username">
+      <label>Password</label>
+      <input id="reg-password" type="password" placeholder="Create a password">
+      <button id="regSubmit">Create Account</button>
+    </div>
+
+    <div class="auth-footer">
+      Secure · Simple · Free
+    </div>
+  </div>
+</div>
+
+<script>
+var dbKey = 'MPM_DB_V5';
+
+function getDB() {
+  var d = localStorage.getItem(dbKey);
+  if (!d) return { users: [], playlists: [], songs: [] };
+  try {
+    return JSON.parse(d);
+  } catch(e) {
+    return { users: [], playlists: [], songs: [] };
+  }
+}
+
+function saveDB(d) {
+  localStorage.setItem(dbKey, JSON.stringify(d));
+}
+
+var db = getDB();
+var hasAdmin = false;
+for (var i = 0; i < db.users.length; i++) {
+  if (db.users[i].username === 'Admin') hasAdmin = true;
+}
+if (!hasAdmin) {
+  db.users.push({ username:'admin', password:'admin', role:'admin' });
+  saveDB(db);
+}
+
+var loginTab = document.getElementById('loginTab');
+var registerTab = document.getElementById('registerTab');
+var loginForm = document.getElementById('loginForm');
+var registerForm = document.getElementById('registerForm');
+
+loginTab.onclick = function() {
+  loginTab.classList.add('active');
+  registerTab.classList.remove('active');
+  loginForm.classList.add('active');
+  registerForm.classList.remove('active');
+};
+
+registerTab.onclick = function() {
+  registerTab.classList.add('active');
+  loginTab.classList.remove('active');
+  registerForm.classList.add('active');
+  loginForm.classList.remove('active');
+};
+
+document.getElementById('loginSubmit').onclick = function() {
+  var u = document.getElementById('login-username').value.trim();
+  var p = document.getElementById('login-password').value;
+  var data = getDB();
+  var found = null;
+  for (var i = 0; i < data.users.length; i++) {
+    if (data.users[i].username === u && data.users[i].password === p) {
+      found = data.users[i];
+      break;
+    }
+  }
+  if (!found) {
+    alert('Invalid username or password');
+    return;
+  }
+  localStorage.setItem('MPM_currentUser', JSON.stringify(found));
+  window.location.href = 'user.html';
+};
+
+document.getElementById('regSubmit').onclick = function() {
+  var u = document.getElementById('reg-username').value.trim();
+  var p = document.getElementById('reg-password').value;
+  if (!u || !p) { alert('Please fill all fields'); return; }
+  var data = getDB();
+  for (var i = 0; i < data.users.length; i++) {
+    if (data.users[i].username === u) { alert('Username already exists'); return; }
+  }
+  data.users.push({ username: u, password: p, role: 'user' });
+  saveDB(data);
+  alert('Account created! You can login now.');
+  loginTab.onclick();
+};
+</script>
+
+</body>
+</html>
+
+

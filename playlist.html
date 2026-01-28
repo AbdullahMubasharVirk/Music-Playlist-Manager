@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Playlist</title>
+
+<style>
+:root {
+  --bg:#0b0b0b;
+  --panel:#121212;
+  --primary:#d4af37;
+  --text:#e5e5e5;
+  --muted:#9a9a9a;
+  --border:#2a2a2a;
+}
+
+body {
+  margin:0;
+  font-family:"Inter", Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+header {
+  padding:16px 24px;
+  border-bottom:1px solid var(--border);
+}
+
+.container {
+  max-width:900px;
+  margin:20px auto;
+  padding:0 20px;
+}
+
+.card {
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:20px;
+  margin-bottom:20px;
+}
+
+h2 { margin-top:0; }
+
+input {
+  width:100%;
+  padding:12px;
+  margin:6px 0 12px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:#0a0a0a;
+  color:var(--text);
+}
+
+button {
+  padding:10px 16px;
+  border:none;
+  border-radius:8px;
+  background:var(--primary);
+  color:#000;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.song {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px;
+  background:#0f0f0f;
+  border-radius:10px;
+  margin-bottom:8px;
+}
+
+.song span {
+  font-size:14px;
+}
+
+.song-actions button {
+  background:none;
+  color:var(--primary);
+  font-size:16px;
+  margin-left:6px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <button onclick="history.back()">← Back</button>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <h2 id="playlistTitle"></h2>
+    <p id="playlistMeta" style="color:var(--muted)"></p>
+  </div>
+
+  <div class="card">
+    <h3>Add Song</h3>
+    <input id="songTitle" placeholder="Song title">
+    <input id="songArtist" placeholder="Artist (optional)">
+    <input id="songLink" placeholder="YouTube / Spotify link">
+    <button onclick="add_song()">Add Song</button>
+  </div>
+
+  <div class="card">
+    <h3>Songs</h3>
+    <div id="songList"></div>
+  </div>
+
+</div>
+
+<script>
+let MPM_DB = JSON.parse(localStorage.getItem('MPM_DB_V5')) || { playlists: [], songs: [] };
+
+let pl_id = Number(new URLSearchParams(window.location.search).get('id'));
+
+let pl = MPM_DB.playlists.find(p => p.id == pl_id);
+if (!pl) {
+  alert('Playlist not found!');
+  history.back();
+  throw 'Playlist missing';
+}
+
+let titleEl = document.getElementById('playlistTitle');
+let metaEl = document.getElementById('playlistMeta');
+titleEl.textContent = pl.name;
+metaEl.textContent = pl.isPublic ? 'Public Playlist 🌍' : 'Private Playlist 🔒';
+
+function writeDB() {
+  localStorage.setItem('MPM_DB_V5', JSON.stringify(MPM_DB));
+}
+
+function listSongs() {
+  let container = document.getElementById('songList');
+  container.innerHTML = '';
+  let songs_for_this = MPM_DB.songs.filter(s => s.playlistId == pl_id);
+
+  if (songs_for_this.length == 0) {
+    container.innerHTML = '<p style="color:var(--muted)">No songs yet</p>';
+    return;
+  }
+
+  songs_for_this.forEach(songObj => {
+    let div = document.createElement('div');
+    div.className = 'song';
+
+    let displayName = songObj.title;
+    if (songObj.artist && songObj.artist.length > 0) {
+      displayName += ' - ' + songObj.artist;
+    }
+
+    let heart = songObj.isLiked ? '❤️' : '🤍';
+
+    div.innerHTML = '<span>' + displayName + '</span>' +
+      '<div class="song-actions">' +
+      '<button onclick="likeSong(' + songObj.id + ')">' + heart + '</button>' +
+      '<button onclick="playSong(\'' + songObj.link + '\')">⏯️</button>' +
+      '<button onclick="deleteSong(' + songObj.id + ')">🗑️</button>' +
+      '</div>';
+
+    container.appendChild(div);
+  });
+}
+
+function add_song() {
+  let t = document.getElementById('songTitle').value.trim();
+  let a = document.getElementById('songArtist').value.trim();
+  let l = document.getElementById('songLink').value.trim();
+  if (!t || !l) {
+    alert('Title & link required');
+    return;
+  }
+
+  let new_song = {
+    id: Date.now(),
+    playlistId: pl_id,
+    owner: pl.owner,
+    title: t,
+    artist: a,
+    link: l,
+    isLiked: false
+  };
+
+  MPM_DB.songs.push(new_song);
+
+  document.getElementById('songTitle').value = '';
+  document.getElementById('songArtist').value = '';
+  document.getElementById('songLink').value = '';
+
+  writeDB();
+  listSongs();
+}
+
+function likeSong(id) {
+  let s = MPM_DB.songs.find(x => x.id == id);
+  if (!s) return;
+  s.isLiked = !s.isLiked;
+  writeDB();
+  listSongs();
+}
+
+function deleteSong(id) {
+  if (!confirm('Remove this song from the playlist?')) return;
+  MPM_DB.songs = MPM_DB.songs.filter(s => s.id != id);
+  writeDB();
+  listSongs();
+}
+
+function playSong(link) {
+  let finalLink = link;
+  if (!/^https?:\/\//i.test(finalLink)) finalLink = 'https://' + finalLink;
+  window.open(finalLink, '_blank');
+}
+
+listSongs();
+</script>
+
+</body>
+</html>
+

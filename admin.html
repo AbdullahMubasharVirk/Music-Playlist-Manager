@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin Dashboard</title>
+
+<style>
+body {
+  margin:0;
+  font-family:Arial;
+  background:#0b0b0b;
+  color:#e5e5e5;
+}
+
+header {
+  padding:16px 24px;
+  background:#121212;
+  border-bottom:1px solid #2a2a2a;
+  display:flex;
+  justify-content:space-between;
+}
+
+.container {
+  max-width:1100px;
+  margin:20px auto;
+  padding:0 20px;
+}
+
+.card {
+  background:#121212;
+  border:1px solid #2a2a2a;
+  border-radius:12px;
+  padding:20px;
+  margin-bottom:20px;
+}
+
+.row {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px;
+  background:#0f0f0f;
+  border-radius:8px;
+  margin-bottom:8px;
+}
+
+button {
+  background:#d4af37;
+  border:none;
+  padding:6px 10px;
+  border-radius:6px;
+  font-weight:600;
+  cursor:pointer;
+  margin-left:6px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h2>🛡️ Admin Dashboard</h2>
+  <button onclick="logout()">Logout</button>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <h3>👤 Users</h3>
+    <div id="userList"></div>
+  </div>
+
+  
+  
+  <div class="card">
+    <h3>🎶 All Playlists</h3>
+    <div id="playlistList"></div>
+  </div>
+
+ 
+  <div class="card">
+    <h3>🎵 All Songs</h3>
+    <div id="songList"></div>
+  </div>
+
+</div>
+
+<script>
+const ADMIN_PASSWORD = "Admin123";
+const DB_KEY = 'MPM_DB_V5';
+
+const db = JSON.parse(localStorage.getItem(DB_KEY)) || {
+  playlists:[],
+  songs:[],
+  users:[]
+};
+
+if(localStorage.getItem('ADMIN_AUTH') !== 'true'){
+  const pass = prompt("Enter Admin Password:");
+  if(pass !== ADMIN_PASSWORD){
+    alert("Access Denied");
+    location.href = "dashboard.html";
+  }
+  localStorage.setItem('ADMIN_AUTH','true');
+}
+
+
+
+function saveDB(){
+  localStorage.setItem(DB_KEY, JSON.stringify(db));
+}
+
+function renderUsers(){
+  userList.innerHTML='';
+
+
+  let users = db.users.length
+    ? db.users.map(u => u.username)
+    : [...new Set(db.playlists.map(p => p.owner))];
+
+  if(!users.length){
+    userList.innerHTML =
+      '<p style="color:#9a9a9a">No users found</p>';
+    return;
+  }
+
+  users.forEach(username=>{
+    const div=document.createElement('div');
+    div.className='row';
+    div.innerHTML=`
+      <span>${username}</span>
+      <div>
+        <button onclick="warnUser('${username}')">⚠️ Warn</button>
+        <button onclick="deleteUser('${username}')">🗑️ Delete</button>
+      </div>
+    `;
+    userList.appendChild(div);
+  });
+}
+
+function warnUser(username){
+  alert(`Warning sent to ${username}`);
+}
+
+function deleteUser(username){
+  if(!confirm('Delete user and all data?')) return;
+  db.users = db.users.filter(u=>u.username!==username);
+  db.playlists = db.playlists.filter(p=>p.owner!==username);
+  db.songs = db.songs.filter(s=>{
+    const p = db.playlists.find(p=>p.id===s.playlistId);
+    return p;
+  });
+  saveDB();
+  renderAll();
+}
+
+
+function renderPlaylists(){
+  playlistList.innerHTML='';
+
+  db.playlists.forEach(p=>{
+    const div = document.createElement('div');
+    div.className='card';
+    div.style.marginBottom = '10px';
+
+    div.innerHTML=`
+      <div class="row" style="justify-content:space-between;">
+        <span>${p.name} (${p.owner}) ${p.isPublic?'🌍':'🔒'}</span>
+        <div>
+          <button onclick="togglePublic(${p.id})">🔄 Public</button>
+          <button onclick="toggleSongs(${p.id}, this)">🎵 Songs</button>
+          <button onclick="deletePlaylist(${p.id})">🗑️</button>
+        </div>
+      </div>
+      <div id="songs-${p.id}" style="margin-top:10px; display:none;"></div>
+    `;
+
+    playlistList.appendChild(div);
+  });
+}
+
+function togglePublic(id){
+  const p = db.playlists.find(p=>p.id===id);
+  p.isPublic = !p.isPublic;
+  saveDB();
+  renderPlaylists();
+}
+
+function deletePlaylist(id){
+  if(!confirm('Delete playlist?')) return;
+  db.playlists = db.playlists.filter(p=>p.id!==id);
+  db.songs = db.songs.filter(s=>s.playlistId!==id);
+  saveDB();
+  renderAll();
+}
+
+function toggleSongs(playlistId, btn){
+  const container = document.getElementById(`songs-${playlistId}`);
+  if(container.style.display === 'block'){
+    container.style.display = 'none';
+    btn.textContent = '🎵 Songs';
+    return;
+  }
+
+
+
+  container.innerHTML = '';
+  const songs = db.songs.filter(s => s.playlistId === playlistId);
+  if(songs.length === 0){
+    container.innerHTML = '<p style="color:#9a9a9a">No songs in this playlist</p>';
+  } else {
+    songs.forEach(s=>{
+      const div = document.createElement('div');
+      div.className = 'row';
+      div.style.padding = '6px 10px';
+      div.style.background = '#1a1a1a';
+      div.innerHTML=`
+        <span>${s.title} ${s.artist ? '- '+s.artist : ''}</span>
+        <div>
+          <button onclick="openSong('${s.link}')">▶️ Play</button>
+          <button onclick="deleteSong(${s.id}); toggleSongs(${playlistId}, btn)">🗑️</button>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  container.style.display = 'block';
+  btn.textContent = '⬆️ Hide Songs';
+}
+
+
+function renderSongs(){
+  songList.innerHTML='';
+
+  db.songs.forEach(s=>{
+    const playlist = db.playlists.find(p => p.id === s.playlistId);
+
+    const div=document.createElement('div');
+    div.className='row';
+    div.innerHTML=`
+      <span>${s.title} ${s.artist ? '- ' + s.artist : ''} <small style="color:#9a9a9a">(${playlist ? playlist.name : 'No Playlist'})</small></span>
+      <div>
+        <button onclick="openSong('${s.link}')">▶️ Play</button>
+        <button onclick="openPlaylist(${s.playlistId})">📂 Playlist</button>
+        <button onclick="deleteSong(${s.id})">🗑️</button>
+      </div>
+    `;
+    songList.appendChild(div);
+  });
+
+  if(!db.songs.length)
+    songList.innerHTML='<p style="color:#9a9a9a">No songs found</p>';
+}
+
+function deleteSong(id){
+  if(!confirm('Delete song?')) return;
+  db.songs = db.songs.filter(s=>s.id!==id);
+  saveDB();
+  renderSongs();
+}
+
+function openSong(link){
+  if (!/^https?:\/\//i.test(link)) {
+    link = 'https://' + link;
+  }
+  window.open(link, '_blank');
+}
+
+function openPlaylist(id){
+  const playlist = db.playlists.find(p => p.id === id);
+  if(!playlist){
+    alert("Playlist not found");
+    return;
+  }
+
+  const songs = db.songs.filter(s => s.playlistId === id);
+  let msg = `Playlist: ${playlist.name}\nSongs:\n`;
+  songs.forEach((s,i) => {
+    msg += `${i+1}. ${s.title} ${s.artist ? '- ' + s.artist : ''}\n`;
+  });
+  alert(msg);
+}
+
+function renderAll(){
+  renderUsers();
+  renderPlaylists();
+  renderSongs();
+}
+
+function logout(){
+  localStorage.removeItem('ADMIN_AUTH');
+  location.href='user.html';
+}
+
+renderAll();
+</script>
+
+</body>
+</html>
