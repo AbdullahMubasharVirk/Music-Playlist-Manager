@@ -8,28 +8,28 @@ Features:
 
 User Features:
 
-Register and log in with personal accounts.
+1.Register and log in with personal accounts.
 
-Create, edit, and delete playlists.
+2.Create, edit, and delete playlists.
 
-Add or remove songs from playlists.
+3.Add or remove songs from playlists.
 
-Control playlist privacy (public/private).
+4.Control playlist privacy (public/private).
 
 
 Admin Features:
 
-Access an Admin Panel via a secure two-step authentication process.
+1.Access an Admin Panel via a secure two-step authentication process.
 
-Admin login: Username: admin | Password: admin
+2.Admin login: Username: admin | Password: admin
 
-Admin Panel password: Admin123
+3.Admin Panel password: Admin123
 
-View all users, playlists, and songs.
+4.View all users, playlists, and songs.
 
-Delete users or playlists.
+5.Delete users or playlists.
 
-Change the privacy status of playlists.
+6.Change the privacy status of playlists.
 
 
 Technologies Used:
